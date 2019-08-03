@@ -103,7 +103,7 @@ func main() {
 					opts := []ffmpeg.TranscodeOptions{}
 					for _, p := range profs {
 						o := ffmpeg.TranscodeOptions{
-							Oname:   fmt.Sprintf("out/%s_%s_%s_%d_%d.ts", pfx, accelStr, p.Name, k, j),
+							Oname:   fmt.Sprintf("%s%s_%s_%d_%d.ts", pfx, accelStr, p.Name, k, j),
 							Profile: p,
 							Accel:   accel,
 						}
@@ -124,6 +124,5 @@ func main() {
 		}(i, &wg)
 	}
 	wg.Wait()
-	fmt.Fprintf(os.Stderr, "Took %v to transcode %v segments",
-		time.Now().Sub(start).Seconds(), segs)
+	fmt.Fprintf(os.Stderr, "Took %v to transcode", time.Now().Sub(start).Seconds())
 }
