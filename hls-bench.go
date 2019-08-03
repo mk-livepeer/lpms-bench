@@ -84,6 +84,7 @@ func main() {
 	for i := 0; i < conc; i++ {
 		wg.Add(1)
 		go func(k int, wg *sync.WaitGroup) {
+			var transcoderHandle ffmpeg.TranscoderHandle
 			for j, v := range pl.Segments {
 				if j >= segs {
 					break
@@ -93,8 +94,9 @@ func main() {
 				}
 				u := path.Join(dir, v.URI)
 				in := &ffmpeg.TranscodeOptionsIn{
-					Fname: u,
-					Accel: accel,
+					Fname:  u,
+					Accel:  accel,
+					Handle: transcoderHandle,
 				}
 				if ffmpeg.Software != accel {
 					in.Device = devices[k%len(devices)]
@@ -113,14 +115,16 @@ func main() {
 				}
 				out := profs2opts(profiles)
 				t := time.Now()
-				err := ffmpeg.Transcode2(in, out)
+				res, err := ffmpeg.Transcode3(in, out)
 				end := time.Now()
 				fmt.Printf("%s,%d,%d,%0.2v\n", end.Format("2006-01-02 15:04:05.999999999"), k, j, end.Sub(t).Seconds())
 				if err != nil {
 					panic(err)
 				}
+				transcoderHandle = res.Handle
 			}
 			wg.Done()
+			ffmpeg.TranscodeStop(&transcoderHandle)
 		}(i, &wg)
 	}
 	wg.Wait()
