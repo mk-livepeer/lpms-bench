@@ -74,6 +74,10 @@ func main() {
 		devices = strings.Split(os.Args[6], ",")
 	}
 
+	benchmark(fname, pfx, accelStr, conc, profiles, accel, devices)
+}
+
+func benchmark(fname, pfx, accelStr string, conc int, profiles []ffmpeg.VideoProfile, accel ffmpeg.Acceleration, devices []string) {
 	ffmpeg.InitFFmpeg()
 	var wg sync.WaitGroup
 	start := time.Now()
