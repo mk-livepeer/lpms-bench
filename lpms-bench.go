@@ -74,10 +74,15 @@ func main() {
 		devices = strings.Split(os.Args[6], ",")
 	}
 
-	benchmark(fname, pfx, accelStr, conc, profiles, accel, devices)
+	elapsed, err := benchmark(fname, pfx, accelStr, conc, profiles, accel, devices)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, err.Error())
+		return
+	}
+	fmt.Fprintf(os.Stderr, "Took %v to transcode", elapsed.Seconds())
 }
 
-func benchmark(fname, pfx, accelStr string, conc int, profiles []ffmpeg.VideoProfile, accel ffmpeg.Acceleration, devices []string) {
+func benchmark(fname, pfx, accelStr string, conc int, profiles []ffmpeg.VideoProfile, accel ffmpeg.Acceleration, devices []string) (time.Duration, error) {
 	ffmpeg.InitFFmpeg()
 	var wg sync.WaitGroup
 	start := time.Now()
@@ -117,6 +122,5 @@ func benchmark(fname, pfx, accelStr string, conc int, profiles []ffmpeg.VideoPro
 		}(i, &wg)
 	}
 	wg.Wait()
-	fmt.Fprintf(os.Stderr, "Took %v to transcode",
-		time.Now().Sub(start).Seconds())
+	return time.Now().Sub(start), nil
 }
