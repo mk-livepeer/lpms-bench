@@ -7,7 +7,6 @@ import (
 	"bufio"
 	"fmt"
 	"os"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -40,7 +39,7 @@ func str2profs(inp string) []ffmpeg.VideoProfile {
 }
 
 func main() {
-	const usage = "Expected: [input file] [output prefix] [# concurrents] [profiles] [sw/nv] <nv-device>"
+	const usage = "Expected: [input file] [output prefix] [profiles] [sw/nv] <nv-device>"
 	if len(os.Args) <= 5 {
 		panic(usage)
 	}
@@ -58,31 +57,43 @@ func main() {
 		panic("Expecting media PL")
 	}
 	pfx := os.Args[2]
-	conc, err := strconv.Atoi(os.Args[3])
-	if err != nil {
-		panic(err)
-	}
-	profiles := str2profs(os.Args[4])
-	accelStr := os.Args[5]
+	profiles := str2profs(os.Args[3])
+	accelStr := os.Args[4]
 	accel := ffmpeg.Software
 	devices := []string{}
 	if "nv" == accelStr {
 		accel = ffmpeg.Nvidia
-		if len(os.Args) <= 6 {
+		if len(os.Args) <= 5 {
 			panic(usage)
 		}
-		devices = strings.Split(os.Args[6], ",")
+		devices = strings.Split(os.Args[5], ",")
 	}
 
-	elapsed, err := benchmark(fname, pfx, accelStr, conc, profiles, accel, devices)
+	// only run the first rendition
+
+	rendition := []ffmpeg.VideoProfile{profiles[0]}
+	elapsedOne, err := benchmark(fname, fmt.Sprintf("%s/one/", pfx), accelStr, 1, rendition, accel, devices)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, err.Error())
 		return
 	}
-	fmt.Fprintf(os.Stderr, "Took %v to transcode", elapsed.Seconds())
+	fmt.Fprintf(os.Stderr, "Took %v to transcode 1 rendition: %v", elapsedOne.Seconds(), rendition)
+
+	// run all renditions
+
+	elapsedAll, err := benchmark(fname, fmt.Sprintf("%s/all/", pfx), accelStr, len(profiles), profiles, accel, devices)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, err.Error())
+		return
+	}
+	fmt.Fprintf(os.Stderr, "Took %v to transcode %d renditions: %v", elapsedAll.Seconds(), len(profiles), profiles)
+
 }
 
 func benchmark(fname, pfx, accelStr string, conc int, profiles []ffmpeg.VideoProfile, accel ffmpeg.Acceleration, devices []string) (time.Duration, error) {
+	if err := os.MkdirAll(pfx, os.ModeDir); err != nil {
+		return 0, err
+	}
 	ffmpeg.InitFFmpeg()
 	var wg sync.WaitGroup
 	start := time.Now()
