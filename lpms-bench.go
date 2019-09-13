@@ -91,7 +91,7 @@ func main() {
 }
 
 func benchmark(fname, pfx, accelStr string, conc int, profiles []ffmpeg.VideoProfile, accel ffmpeg.Acceleration, devices []string) (time.Duration, error) {
-	if err := os.MkdirAll(pfx, os.ModeDir); err != nil {
+	if err := os.MkdirAll(pfx, os.ModePerm); err != nil {
 		return 0, err
 	}
 	ffmpeg.InitFFmpeg()
