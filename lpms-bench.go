@@ -86,8 +86,10 @@ func main() {
 		fmt.Fprintf(os.Stderr, err.Error())
 		return
 	}
-	fmt.Fprintf(os.Stderr, "Took %v to transcode %d renditions: %v", elapsedAll.Seconds(), len(profiles), profiles)
-
+	fmt.Fprintf(os.Stderr, "Took %v to transcode %d renditions: %v\n", elapsedAll.Seconds(), len(profiles), profiles)
+	fmt.Fprintf(os.Stderr, "---RESULTS---\n")
+	fmt.Fprintf(os.Stderr, "Took %v to transcode 1 rendition: %v\n", elapsedOne.Seconds(), rendition)
+	fmt.Fprintf(os.Stderr, "Took %v to transcode %d renditions: %v\n", elapsedAll.Seconds(), len(profiles), profiles)
 }
 
 func benchmark(fname, pfx, accelStr string, conc int, profiles []ffmpeg.VideoProfile, accel ffmpeg.Acceleration, devices []string) (time.Duration, error) {
