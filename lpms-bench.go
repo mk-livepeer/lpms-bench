@@ -38,6 +38,11 @@ func str2profs(inp string) []ffmpeg.VideoProfile {
 	return profs
 }
 
+type profileTime struct {
+	videoProfile ffmpeg.VideoProfile
+	duration     time.Duration
+}
+
 func main() {
 	const usage = "Expected: [input file] [output prefix] [profiles] [sw/nv] <nv-device>"
 	if len(os.Args) <= 5 {
@@ -69,18 +74,21 @@ func main() {
 		devices = strings.Split(os.Args[5], ",")
 	}
 
-	// only run the first rendition
+	results := []profileTime{}
 
-	rendition := []ffmpeg.VideoProfile{profiles[0]}
-	elapsedOne, err := benchmark(fname, fmt.Sprintf("%s/one/", pfx), accelStr, 1, rendition, accel, devices)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, err.Error())
-		return
+	// run each rendition one at a time
+	for n, profile := range profiles {
+		rendition := []ffmpeg.VideoProfile{profile}
+		elapsed, err := benchmark(fname, fmt.Sprintf("%s/one/%d/", pfx, n), accelStr, 1, rendition, accel, devices)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, err.Error())
+			return
+		}
+		results = append(results, profileTime{profile, elapsed})
+		fmt.Fprintf(os.Stderr, "Took %v to transcode 1 rendition: %v", elapsed.Seconds(), rendition)
 	}
-	fmt.Fprintf(os.Stderr, "Took %v to transcode 1 rendition: %v", elapsedOne.Seconds(), rendition)
 
-	// run all renditions
-
+	// run all renditions together
 	elapsedAll, err := benchmark(fname, fmt.Sprintf("%s/all/", pfx), accelStr, len(profiles), profiles, accel, devices)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, err.Error())
@@ -88,7 +96,9 @@ func main() {
 	}
 	fmt.Fprintf(os.Stderr, "Took %v to transcode %d renditions: %v\n", elapsedAll.Seconds(), len(profiles), profiles)
 	fmt.Fprintf(os.Stderr, "---RESULTS---\n")
-	fmt.Fprintf(os.Stderr, "Took %v to transcode 1 rendition: %v\n", elapsedOne.Seconds(), rendition)
+	for _, res := range results {
+		fmt.Fprintf(os.Stderr, "Took %v to transcode 1 rendition: %v\n", res.duration.Seconds(), res.videoProfile)
+	}
 	fmt.Fprintf(os.Stderr, "Took %v to transcode %d renditions: %v\n", elapsedAll.Seconds(), len(profiles), profiles)
 }
 
